@@ -1,0 +1,6 @@
+- hosts: chatapp
+  become: yes
+  roles:
+    - nodejs
+    - nginx
+    - chatapp
