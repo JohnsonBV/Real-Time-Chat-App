@@ -1,21 +1,71 @@
-
 <!DOCTYPE html>
 <html>
 <head>
-  <title>CEEYIT Chat</title>
+  <meta charset="UTF-8">
+  <title>Chat App</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #eef; text-align: center; margin-top: 100px; }
-    h2 { color: #333; }
-    p { font-size: 18px; }
+    body { font-family: sans-serif; padding: 0; margin: 0; }
+    #chat { max-width: 600px; margin: 20px auto; }
+    #messages { list-style-type: none; padding: 0; height: 300px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; }
+    #messages li { padding: 5px 10px; }
+    .system { color: gray; font-style: italic; }
+    #typing { font-size: 0.9em; color: #999; height: 20px; }
   </style>
 </head>
 <body>
-  <h2>CEEYIT Real-Time Chat App</h2>
-  <p>Status: <span id="status">Connecting...</span></p>
+  <div id="chat">
+    <ul id="messages"></ul>
+    <div id="typing"></div>
+    <form id="form">
+      <input id="input" autocomplete="off" placeholder="Type a message..." />
+      <button>Send</button>
+    </form>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    document.getElementById('status').textContent = 'Connected';
+    const form = document.getElementById('form');
+    const input = document.getElementById('input');
+    const messages = document.getElementById('messages');
+    const typing = document.getElementById('typing');
+
+    const username = prompt("Enter your username") || "Anonymous";
+    const room = prompt("Enter room name") || "general";
+    socket.emit('joinRoom', { username, room });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (input.value) {
+        socket.emit('chat message', input.value);
+        socket.emit('stop typing');
+        input.value = '';
+      }
+    });
+
+    input.addEventListener('input', () => {
+      if (input.value.trim()) {
+        socket.emit('typing');
+      } else {
+        socket.emit('stop typing');
+      }
+    });
+
+    socket.on('chat message', msg => {
+      const item = document.createElement('li');
+      item.innerHTML = `<strong>${msg.username}</strong> [${msg.timestamp}]: ${msg.text}`;
+      if (msg.username === 'System') item.classList.add('system');
+      messages.appendChild(item);
+      messages.scrollTop = messages.scrollHeight;
+    });
+
+    socket.on('typing', name => {
+      typing.textContent = `${name} is typing...`;
+    });
+
+    socket.on('stop typing', () => {
+      typing.textContent = '';
+    });
   </script>
 </body>
 </html>
